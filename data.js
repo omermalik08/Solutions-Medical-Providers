@@ -1,58 +1,83 @@
 window.dashboardData = {
   companyName: 'Solutions Medical Providers',
   dashboardTitle: 'Mobile NP Dashboard',
+  viewLabel: 'View Dashboard',
   periodLabel: 'May 12 to May 18',
-  snapshotLabel: 'Daily Operations',
   kpis: [
     {
       id: 'visits-completed',
       label: 'Visits Completed',
       value: '18',
+      ringValue: '90%',
+      ringLabel: 'Target',
       progress: 90,
-      summary: '90% of goal',
-      detail: 'Daily goal 20',
-      footnote: '2 visits remaining',
-      accent: '#35f5ff'
+      footerLabel: 'Daily goal',
+      footerValue: '20',
+      accent: '#f05243',
+      accentSoft: 'rgba(240, 82, 67, 0.34)',
+      accentDeep: 'rgba(240, 82, 67, 0.1)',
+      lightning: 'red'
     },
     {
       id: 'scheduled-visits',
       label: 'Scheduled Visits',
       value: '22',
+      ringValue: '88%',
+      ringLabel: 'Utilization',
       progress: 88,
-      summary: '88% utilization',
-      detail: 'Capacity 25',
-      footnote: '3 open slots',
-      accent: '#adff45'
+      footerLabel: 'Capacity',
+      footerValue: '25',
+      accent: '#69e8ff',
+      accentSoft: 'rgba(105, 232, 255, 0.34)',
+      accentDeep: 'rgba(105, 232, 255, 0.1)',
+      lightning: 'blue'
     },
     {
       id: 'revenue-today',
       label: 'Revenue Today',
       value: '$3,240',
+      ringValue: '95%',
+      ringLabel: 'Vs Plan',
       progress: 95,
-      summary: '95% vs plan',
-      detail: 'Plan $3,400',
-      footnote: '$160 to plan',
-      accent: '#ffcf4a'
+      footerLabel: 'Plan',
+      footerValue: '$3,400',
+      accent: '#835cff',
+      accentSoft: 'rgba(131, 92, 255, 0.36)',
+      accentDeep: 'rgba(131, 92, 255, 0.1)',
+      lightning: 'purple'
     },
     {
       id: 'completion-rate',
       label: 'Completion Rate',
       value: '82%',
+      ringValue: '-3%',
+      ringLabel: 'Vs Last Wk',
       progress: 82,
-      summary: '-3% vs last week',
-      detail: 'Last week 85%',
-      footnote: 'Watch missed visits',
-      accent: '#ff5ec4'
+      footerLabel: 'Last week',
+      footerValue: '85%',
+      accent: '#7af36c',
+      accentSoft: 'rgba(122, 243, 108, 0.34)',
+      accentDeep: 'rgba(122, 243, 108, 0.1)',
+      lightning: 'green'
     }
   ],
-  visitsCompletedDetail: {
-    completed: 18,
-    goal: 20,
+  selectedMetric: {
+    label: 'Visits Completed',
+    subtitle: 'Track completed mobile NP visits against target',
+    value: '18',
+    ringValue: '90%',
+    ringLabel: 'Target',
     progress: 90,
-    scheduled: 22,
-    remaining: 2,
-    completionRate: '82%',
-    routeNote: 'Balanced for a small mobile NP team covering daily facility rounds.'
+    accent: '#f05243',
+    accentSoft: 'rgba(240, 82, 67, 0.34)',
+    accentDeep: 'rgba(240, 82, 67, 0.1)',
+    lightning: 'red',
+    stats: [
+      { label: 'Daily Goal', value: '20' },
+      { label: 'Remaining', value: '2', tone: 'negative' },
+      { label: '% of Target', value: '90%', tone: 'negative' },
+      { label: 'Trend (last 7 days)', value: 'sparkline' }
+    ]
   },
   visitsOverTime: [
     { date: 'May 12', visits: 14 },
@@ -63,17 +88,18 @@ window.dashboardData = {
     { date: 'May 17', visits: 20 },
     { date: 'May 18', visits: 18 }
   ],
+  chartTarget: 18,
   providerProductivity: [
-    { provider: 'NP Smith', visits: 10, accent: '#35f5ff' },
-    { provider: 'NP Jones', visits: 8, accent: '#adff45' },
-    { provider: 'NP Brown', visits: 6, accent: '#ffcf4a' },
-    { provider: 'NP Taylor', visits: 4, accent: '#ff5ec4' }
+    { provider: 'NP Smith', visits: 10, percent: 96 },
+    { provider: 'NP Jones', visits: 8, percent: 87 },
+    { provider: 'NP Brown', visits: 6, percent: 84 },
+    { provider: 'NP Taylor', visits: 4, percent: 80 }
   ],
   missedVisits: [
-    { reason: 'Patient Refused', count: 25, accent: '#ff5ec4' },
-    { reason: 'Hospitalized', count: 15, accent: '#35f5ff' },
-    { reason: 'Facility Issue', count: 10, accent: '#adff45' },
-    { reason: 'Scheduling Error', count: 15, accent: '#ffcf4a' }
+    { reason: 'Patient Refused', count: 25, percent: 38 },
+    { reason: 'Hospitalized', count: 15, percent: 23 },
+    { reason: 'Facility Issue', count: 10, percent: 15 },
+    { reason: 'Scheduling Error', count: 15, percent: 24 }
   ],
   missedRevenue: {
     missedVisits: 65,
@@ -82,34 +108,19 @@ window.dashboardData = {
     label: '65 missed visits x $180'
   },
   insights: [
-    {
-      title: 'Completion rate slipped',
-      body: 'Completion rate is 82%, down 3% from last week. Patient refusals and scheduling errors are the fastest places to recover visits.'
-    },
-    {
-      title: 'Top providers are carrying volume',
-      body: 'NP Smith and NP Jones completed 18 visits together. Keep lower-volume routes visible before adding more scheduled capacity.'
-    },
-    {
-      title: 'Revenue gap is manageable',
-      body: 'Revenue is $160 under plan today, while missed visits show a larger $11,700 recovery opportunity for the week.'
-    }
+    'Completion rate is 3% below last week.',
+    'Patient refusals are the largest missed-visit category.'
   ],
   alerts: [
     {
-      level: 'High',
-      title: 'Scheduling error misses',
-      body: '15 missed visits need route review and same-week rescheduling.'
+      title: 'Scheduling errors need review',
+      time: 'May 18 - 8:45 AM',
+      level: 'high'
     },
     {
-      level: 'Medium',
-      title: 'Patient refusal trend',
-      body: '25 refusals make up the largest missed-visit category.'
-    },
-    {
-      level: 'Low',
-      title: 'Capacity still available',
-      body: '3 visit slots remain open against a daily capacity of 25.'
+      title: 'Patient refusal trend increased',
+      time: 'May 18 - 7:15 AM',
+      level: 'medium'
     }
   ]
 };

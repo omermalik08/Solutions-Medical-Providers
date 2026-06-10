@@ -1,10 +1,56 @@
 (() => {
   const baseData = window.dashboardData;
   const data = baseData.ownerDashboard;
+  const routing = baseData.roleRouting;
   const root = document.getElementById('dashboard-root');
   const accessKey = 'smpOwnerAccess';
   let officeMarkup = root.innerHTML;
   let activeFilter = 'all';
+
+  function normalizeRole(role) {
+    return String(role || routing.defaultRole).trim().toLowerCase().replace(/\s+/g, '_');
+  }
+
+  function currentUser() {
+    return window.SMP_AUTH_USER || baseData.currentUser || {};
+  }
+
+  function roleFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const role = params.get(routing.demoRoleParam);
+    if (!role) return '';
+    const normalized = normalizeRole(role);
+    try {
+      window.sessionStorage.setItem(routing.storageKey, normalized);
+    } catch (error) {
+      return normalized;
+    }
+    return normalized;
+  }
+
+  function currentRole() {
+    const user = currentUser();
+    try {
+      return normalizeRole(roleFromQuery() || user.role || window.sessionStorage.getItem(routing.storageKey));
+    } catch (error) {
+      return normalizeRole(roleFromQuery() || user.role);
+    }
+  }
+
+  function rolePermissions() {
+    const user = currentUser();
+    const configured = routing.roles[currentRole()];
+    return new Set([...(configured ? configured.permissions : []), ...(user.permissions || [])]);
+  }
+
+  function canAccessExecutive() {
+    return rolePermissions().has('executive_dashboard') || isUnlocked();
+  }
+
+  function defaultLanding() {
+    const configured = routing.roles[currentRole()];
+    return configured ? configured.landing : 'office';
+  }
 
   function isUnlocked() {
     try {
@@ -28,6 +74,7 @@
 
   function addOwnerButton() {
     const actions = document.querySelector('.overview-top .executive-actions') || document.querySelector('.overview-top');
+    if (!canAccessExecutive()) return;
     if (!actions || actions.querySelector('[data-owner-route="open"]')) return;
     const button = document.createElement('button');
     button.className = 'view-button owner-access-button';
@@ -117,13 +164,16 @@
   }
 
   function executiveView() {
+    const lockButton = isUnlocked() && !rolePermissions().has('executive_dashboard')
+      ? `<button class='view-button' type='button' data-owner-route='lock'>Lock Owner View</button>`
+      : '';
     root.innerHTML = `
       <div class='reference-shell executive-shell'>
         <header class='overview-top executive-top'>
           <div><h1>${data.title}</h1><p>${data.subtitle}</p></div>
           <div class='executive-actions'>
             <button class='view-button' type='button' data-owner-route='office'>Office Manager Dashboard</button>
-            <button class='view-button' type='button' data-owner-route='lock'>Lock Owner View</button>
+            ${lockButton}
           </div>
         </header>
         <section class='executive-search panel-soft'>
@@ -173,9 +223,15 @@
   }
 
   function route() {
-    if (window.location.hash === '#executive') {
-      if (isUnlocked()) executiveView();
+    const hash = window.location.hash;
+    if (hash === '#executive') {
+      if (canAccessExecutive()) executiveView();
       else gateView();
+    } else if (hash === '#office') {
+      root.innerHTML = officeMarkup;
+      addOwnerButton();
+    } else if (defaultLanding() === 'executive' && canAccessExecutive()) {
+      executiveView();
     } else {
       root.innerHTML = officeMarkup;
       addOwnerButton();
@@ -187,10 +243,10 @@
     if (routeButton) {
       const routeName = routeButton.dataset.ownerRoute;
       if (routeName === 'open') window.location.hash = 'executive';
-      if (routeName === 'office') window.location.hash = '';
+      if (routeName === 'office') window.location.hash = 'office';
       if (routeName === 'lock') {
         setUnlocked(false);
-        route();
+        window.location.hash = '';
       }
       if (routeName === 'unlock') {
         const input = document.getElementById('owner-code');

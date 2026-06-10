@@ -41,3 +41,19 @@ window.dashboardData.ownerDashboard = {
     { title: 'Patient refusals', detail: 'Largest missed-visit category and rising.', action: 'Review script' }
   ]
 };
+
+window.dashboardData.roleRouting = {
+  defaultRole: 'office_manager',
+  demoRoleParam: 'role',
+  storageKey: 'smpUserRole',
+  roles: {
+    owner: {
+      landing: 'executive',
+      permissions: ['office_dashboard', 'executive_dashboard']
+    },
+    office_manager: {
+      landing: 'office',
+      permissions: ['office_dashboard']
+    }
+  }
+};

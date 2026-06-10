@@ -119,21 +119,18 @@
     if (!input || !results) return;
     const query = input.value.trim().toLowerCase();
     if (!query && filter === 'all') {
-      results.innerHTML = `
-        <article class='search-empty'>
-          <span>Search Ready</span>
-          <strong>Find providers, office manager tasks, missed visits, facilities, or owner reviews.</strong>
-          <p>Try NP Brown, scheduling errors, South Plant, patient refusals, or overdue.</p>
-        </article>`;
+      results.hidden = true;
+      results.innerHTML = '';
       return;
     }
+    results.hidden = false;
     const rows = searchItems()
       .filter((item) => {
         const type = item.type.toLowerCase().replace(' ', '-');
         const haystack = `${item.type} ${item.title} ${item.meta} ${item.value}`.toLowerCase();
         return (filter === 'all' || type === filter) && (!query || haystack.includes(query));
       })
-      .slice(0, 8);
+      .slice(0, 6);
     results.innerHTML = rows.length
       ? rows.map((item) => `
           <article>
@@ -163,6 +160,133 @@
       </div>`;
   }
 
+  function executiveKpis() {
+    return data.kpis
+      .map((item) => `
+        <article class='exec-kpi panel-soft ${item.tone}'>
+          <span>${item.label}</span>
+          <strong>${item.value}</strong>
+          <small>${item.detail}</small>
+        </article>`)
+      .join('');
+  }
+
+  function ownerPriority() {
+    return `
+      <section class='owner-priority panel-soft'>
+        <span class='status-chip'>Owner Focus</span>
+        <h2>Start with the exceptions.</h2>
+        <p>${data.kpis[0].value} providers need review, ${data.manager.overdueItems} office items are overdue, and ${data.kpis[3].value} is still at risk from missed visits.</p>
+        <div class='priority-strip'>
+          <span>Review NP Brown</span>
+          <span>Clear overdue follow-ups</span>
+          <span>Reduce patient refusals</span>
+        </div>
+      </section>`;
+  }
+
+  function ownerSearch() {
+    return `
+      <section class='owner-search panel-soft'>
+        <label>
+          <span>Search</span>
+          <input id='executive-search' type='search' placeholder='Provider, task, facility, status...' />
+        </label>
+        <div class='search-filters'>
+          <button class='active' data-owner-filter='all'>All</button>
+          <button data-owner-filter='provider'>Providers</button>
+          <button data-owner-filter='task'>Tasks</button>
+          <button data-owner-filter='missed-visit'>Missed</button>
+          <button data-owner-filter='review'>Reviews</button>
+        </div>
+        <div class='search-results' id='executive-search-results' hidden></div>
+      </section>`;
+  }
+
+  function focusPanel() {
+    return `
+      <section class='exec-panel panel-soft focus-panel'>
+        <div class='exec-panel-head'>
+          <div><h2>Needs My Review</h2><p>Three items worth your attention first.</p></div>
+          <span class='status-chip'>Today</span>
+        </div>
+        <div class='focus-list'>
+          ${data.reviews.map((item, index) => `
+            <article>
+              <span>${index + 1}</span>
+              <div><strong>${item.title}</strong><p>${item.detail}</p></div>
+              <button>${item.action}</button>
+            </article>`).join('')}
+        </div>
+      </section>`;
+  }
+
+  function managerSnapshot() {
+    return `
+      <section class='exec-panel panel-soft manager-panel'>
+        <div class='exec-panel-head'>
+          <div><h2>Office Manager Snapshot</h2><p>Backlog, speed, and overdue work.</p></div>
+          <span class='status-chip'>Score ${data.manager.score}</span>
+        </div>
+        <div class='manager-stats compact'>
+          <div><strong>${data.manager.resolvedToday}</strong><span>Resolved Today</span></div>
+          <div><strong>${data.manager.openItems}</strong><span>Open</span></div>
+          <div><strong>${data.manager.overdueItems}</strong><span>Overdue</span></div>
+          <div><strong>${data.manager.averageResolution}</strong><span>Avg Resolution</span></div>
+        </div>
+        <div class='task-summary'>
+          ${data.tasks.slice(0, 3).map((task) => `
+            <article>
+              <div><strong>${task.task}</strong><p>${task.status} - ${task.due}</p></div>
+              <span class='priority ${task.priority.toLowerCase()}'>${task.priority}</span>
+            </article>`).join('')}
+        </div>
+      </section>`;
+  }
+
+  function providerWatchlist() {
+    return `
+      <section class='exec-panel panel-soft provider-watch-panel'>
+        <div class='exec-panel-head'>
+          <div><h2>Provider Watchlist</h2><p>Simple view of who is fine and who needs follow-up.</p></div>
+          <span class='status-chip'>${data.providers.length} Providers</span>
+        </div>
+        <div class='provider-watchlist'>
+          ${data.providers.map((provider) => `
+            <article>
+              <div>
+                <strong>${provider.name}</strong>
+                <p>${provider.route}</p>
+              </div>
+              <span class='provider-score-pill'>${provider.score}</span>
+              <span>${provider.visits}/${provider.scheduled} visits</span>
+              <span>${provider.missed} missed</span>
+              <span>${provider.docs}</span>
+              <em>${provider.status}</em>
+            </article>`).join('')}
+        </div>
+      </section>`;
+  }
+
+  function followUpPanel() {
+    return `
+      <section class='exec-panel panel-soft follow-panel'>
+        <div class='exec-panel-head'>
+          <div><h2>Missed Visit Follow-Up</h2><p>Who owns the next action and when it is due.</p></div>
+          <span class='status-chip'>${data.followUps.length} Open</span>
+        </div>
+        <div class='follow-up-list'>
+          ${data.followUps.map((item) => `
+            <article>
+              <div><strong>${item.patient}</strong><p>${item.facility} - ${item.reason}</p></div>
+              <span>${item.owner}</span>
+              <span>${item.status}</span>
+              <strong>${item.due}</strong>
+            </article>`).join('')}
+        </div>
+      </section>`;
+  }
+
   function executiveView() {
     const lockButton = isUnlocked() && !rolePermissions().has('executive_dashboard')
       ? `<button class='view-button' type='button' data-owner-route='lock'>Lock Owner View</button>`
@@ -176,47 +300,18 @@
             ${lockButton}
           </div>
         </header>
-        <section class='executive-search panel-soft'>
-          <label><span>Search providers, tasks, missed visits, facilities, or alerts</span><input id='executive-search' type='search' placeholder='Search NP Brown, scheduling errors, South Plant...' /></label>
-          <div class='search-filters'>
-            <button class='active' data-owner-filter='all'>All</button>
-            <button data-owner-filter='provider'>Providers</button>
-            <button data-owner-filter='task'>Tasks</button>
-            <button data-owner-filter='missed-visit'>Missed Visits</button>
-            <button data-owner-filter='review'>Reviews</button>
-          </div>
-          <div class='search-results' id='executive-search-results'></div>
+        <section class='owner-command'>
+          ${ownerPriority()}
+          ${ownerSearch()}
         </section>
-        <section class='executive-kpis'>${data.kpis.map((item) => `<article class='exec-kpi panel-soft ${item.tone}'><span>${item.label}</span><strong>${item.value}</strong><small>${item.detail}</small></article>`).join('')}</section>
-        <section class='executive-grid'>
-          <section class='exec-panel panel-soft'>
-            <div class='exec-panel-head'><div><h2>Needs My Review</h2><p>Only the items that need owner attention.</p></div><span class='status-chip'>3 Items</span></div>
-            <div class='review-list'>${data.reviews.map((item) => `<article><div><strong>${item.title}</strong><p>${item.detail}</p></div><button>${item.action}</button></article>`).join('')}</div>
-          </section>
-          <section class='exec-panel panel-soft'>
-            <div class='exec-panel-head'><div><h2>Office Manager Control</h2><p>${data.manager.note}</p></div><span class='status-chip'>Score ${data.manager.score}</span></div>
-            <div class='manager-stats'>
-              <div><strong>${data.manager.resolvedToday}</strong><span>Resolved Today</span></div>
-              <div><strong>${data.manager.openItems}</strong><span>Open Items</span></div>
-              <div><strong>${data.manager.overdueItems}</strong><span>Overdue</span></div>
-              <div><strong>${data.manager.averageResolution}</strong><span>Avg Resolution</span></div>
-            </div>
-            <div class='task-list'>${data.tasks.map((task) => `<article><div><strong>${task.task}</strong><p>${task.owner} - ${task.status} - ${task.due}</p></div><span class='priority ${task.priority.toLowerCase()}'>${task.priority}</span><em>${task.count}</em></article>`).join('')}</div>
-          </section>
+        <section class='executive-kpis compact'>${executiveKpis()}</section>
+        <section class='owner-dashboard-grid'>
+          ${focusPanel()}
+          ${managerSnapshot()}
         </section>
-        <section class='exec-panel panel-soft'>
-          <div class='exec-panel-head'><div><h2>Provider Scorecards</h2><p>Weekly productivity, missed visits, revenue, documentation, and coaching flags.</p></div><span class='status-chip'>4 Providers</span></div>
-          <div class='provider-score-grid'>${data.providers.map((provider) => `<article class='provider-card'><div><h3>${provider.name}</h3><p>${provider.route}</p></div><div class='provider-score'><strong>${provider.score}</strong><span>score</span></div><dl><div><dt>Visits</dt><dd>${provider.visits}/${provider.scheduled}</dd></div><div><dt>Missed</dt><dd>${provider.missed}</dd></div><div><dt>Revenue</dt><dd>${provider.revenue}</dd></div><div><dt>Docs</dt><dd>${provider.docs}</dd></div></dl><footer><span class='status-chip'>${provider.status}</span><em>${provider.trend}</em></footer></article>`).join('')}</div>
-        </section>
-        <section class='executive-grid lower'>
-          <section class='exec-panel panel-soft'>
-            <div class='exec-panel-head'><div><h2>Missed Visit Follow-Up Tracker</h2><p>Owner, reason, next action, due date, and revenue impact.</p></div><span class='status-chip'>Live Queue</span></div>
-            <div class='follow-table'>${data.followUps.map((item) => `<article><span>${item.patient}<small>${item.facility}</small></span><span>${item.provider}<small>${item.owner}</small></span><span>${item.reason}</span><span>${item.status}</span><span>${item.due}</span><strong>${item.value}</strong></article>`).join('')}</div>
-          </section>
-          <section class='exec-panel panel-soft'>
-            <div class='exec-panel-head'><div><h2>Daily Accountability</h2><p>Who is on pace, who needs help, and where to follow up.</p></div></div>
-            <div class='accountability-list'>${data.providers.map((provider) => `<article><strong>${provider.name}</strong><span>${provider.visits} completed</span><span>${provider.missed} missed</span><span>${provider.docs}</span><em>${provider.trend}</em></article>`).join('')}</div>
-          </section>
+        <section class='owner-dashboard-grid lower'>
+          ${providerWatchlist()}
+          ${followUpPanel()}
         </section>
       </div>`;
     renderSearch();

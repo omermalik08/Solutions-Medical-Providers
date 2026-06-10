@@ -109,7 +109,19 @@
       meta: item.detail,
       value: item.action
     }));
-    return [...providers, ...tasks, ...followUps, ...reviews];
+    const codes = data.codeOpportunities.map((item) => ({
+      type: 'Code',
+      title: `${item.code} - ${item.title}`,
+      meta: `${item.category} - ${item.trigger}`,
+      value: item.status
+    }));
+    const revenue = data.revenue.opportunities.map((item) => ({
+      type: 'Revenue',
+      title: item.label,
+      meta: item.detail,
+      value: item.value
+    }));
+    return [...providers, ...tasks, ...followUps, ...reviews, ...revenue, ...codes];
   }
 
   function renderSearch(filter = activeFilter) {
@@ -176,11 +188,11 @@
       <section class='owner-priority panel-soft'>
         <span class='status-chip'>Owner Focus</span>
         <h2>Start with the exceptions.</h2>
-        <p>${data.kpis[0].value} providers need review, ${data.manager.overdueItems} office items are overdue, and ${data.kpis[3].value} is still at risk from missed visits.</p>
+        <p>${data.kpis[0].value} providers need review, ${data.manager.overdueItems} office items are overdue, ${data.revenue.missedRecoverable} may be recoverable from missed visits, and ${data.revenue.addOnReview} is queued for billing review.</p>
         <div class='priority-strip'>
           <span>Review NP Brown</span>
           <span>Clear overdue follow-ups</span>
-          <span>Reduce patient refusals</span>
+          <span>Check revenue exceptions</span>
         </div>
       </section>`;
   }
@@ -197,9 +209,62 @@
           <button data-owner-filter='provider'>Providers</button>
           <button data-owner-filter='task'>Tasks</button>
           <button data-owner-filter='missed-visit'>Missed</button>
+          <button data-owner-filter='revenue'>Revenue</button>
+          <button data-owner-filter='code'>Codes</button>
           <button data-owner-filter='review'>Reviews</button>
         </div>
         <div class='search-results' id='executive-search-results' hidden></div>
+      </section>`;
+  }
+
+  function revenueCommand() {
+    return `
+      <section class='revenue-command'>
+        <section class='exec-panel panel-soft revenue-panel'>
+          <div class='exec-panel-head'>
+            <div><h2>Revenue Command</h2><p>${data.revenue.period} view of money collected, held, and still recoverable.</p></div>
+            <span class='status-chip'>${data.revenue.cleanClaimRate} Clean</span>
+          </div>
+          <div class='revenue-summary'>
+            <article>
+              <span>Collected</span>
+              <strong>${data.revenue.collected}</strong>
+              <p>Projected ${data.revenue.projected}</p>
+            </article>
+            <article>
+              <span>Billing Holds</span>
+              <strong>${data.revenue.billingHolds}</strong>
+              <p>Documentation or coding review</p>
+            </article>
+          </div>
+          <div class='revenue-opportunities'>
+            ${data.revenue.opportunities.map((item) => `
+              <article class='${item.tone}'>
+                <div><strong>${item.label}</strong><p>${item.detail}</p></div>
+                <span>${item.value}</span>
+              </article>`).join('')}
+          </div>
+          <p class='revenue-note'>${data.revenue.note}</p>
+        </section>
+        <section class='exec-panel panel-soft code-panel'>
+          <div class='exec-panel-head'>
+            <div><h2>Add-On Code Review</h2><p>Suggestions for your biller to look into before anything is billed.</p></div>
+            <span class='status-chip'>Review Only</span>
+          </div>
+          <div class='code-opportunity-list'>
+            ${data.codeOpportunities.map((item) => `
+              <article>
+                <code>${item.code}</code>
+                <div>
+                  <strong>${item.title}</strong>
+                  <p>${item.trigger}</p>
+                  <small>${item.review}</small>
+                </div>
+                <span>${item.status}</span>
+              </article>`).join('')}
+          </div>
+          <p class='compliance-note'>Use this as a billing-worklist prompt only. Your billing team should verify payer rules, medical necessity, documentation, scope, modifiers, and edit conflicts before billing.</p>
+        </section>
       </section>`;
   }
 
@@ -305,6 +370,7 @@
           ${ownerSearch()}
         </section>
         <section class='executive-kpis compact'>${executiveKpis()}</section>
+        ${revenueCommand()}
         <section class='owner-dashboard-grid'>
           ${focusPanel()}
           ${managerSnapshot()}
